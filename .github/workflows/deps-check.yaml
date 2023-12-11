@@ -1,0 +1,18 @@
+name: deps-check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: read-all
+
+jobs:
+  manypkg:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Run manypkg
+        run: pnpm manypkg check
