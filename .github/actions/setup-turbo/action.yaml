@@ -2,24 +2,21 @@ name: Setup turbo
 description: "Setup pnpm, Node.js, turborepo and its own remote-caching server."
 inputs:
   node-version:
-    description: "version of Node.js using setup."
+    description: "Version of Node.js using setup. This is also used as a cache key for turbo-remote-cache-server."
     default: "20"
     required: false
+  turbo-cache-key:
+    description: "Cache key for turbo-remote-cache-server."
+    required: true
 
 runs:
   using: composite
   steps:
     - name: Launch Turbo Remote Cache Server
       uses: dtinth/setup-github-actions-caching-for-turbo@v1.1.0
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
+      with:
+        cache-prefix: turbogha_${{ inputs.turbo-cache-key }}_node${{ inputs.node-version }}
+    - name: Setup node
+      uses: ./.github/actions/setup-node
       with:
         node-version: ${{ inputs.node-version }}
-        cache: pnpm
-        cache-dependency-path: pnpm-lock.yaml
-    - name: Install packages
-      shell: sh
-      run: pnpm install --frozen-lockfile
-
