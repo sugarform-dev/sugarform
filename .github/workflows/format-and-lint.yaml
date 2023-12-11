@@ -1,3 +1,5 @@
+name: format-and-lint
+
 on:
   push:
     branches: [main]
