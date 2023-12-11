@@ -1,0 +1,24 @@
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: read-all
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-turbo
+      - name: Run Prettier
+        run: pnpm run format:check
+      
+  eslint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-turbo
+      - name: Run ESLint
+        run: pnpm run lint
+      
