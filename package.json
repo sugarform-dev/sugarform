@@ -17,5 +17,11 @@
   "packageManager": "pnpm@8.9.0",
   "engines": {
     "node": ">=18"
+  },
+  "manypkg": {
+    "ignoredRules": [
+      "INTERNAL_MISMATCH",
+      "ROOT_HAS_DEV_DEPENDENCIES"
+    ]
   }
 }
