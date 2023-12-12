@@ -1,4 +1,4 @@
-import { resolve } from 'path';
+import { resolve, basename } from 'path';
 import terser from "@rollup/plugin-terser";
 import reactPlugin from '@vitejs/plugin-react-swc';
 import outputSize from 'rollup-plugin-output-size';
@@ -18,20 +18,17 @@ export default defineConfig({
     emptyOutDir: true,
     minify: false,
     sourcemap: false,
+    lib: {
+      entry: resolve(__dirname, 'lib.ts'),
+      name: '@sugarform/core',
+      formats: ['cjs', 'es'],
+      fileName: format => {
+        if (format === 'cjs') return basename(packageJson.exports['.'].require);
+        if (format === 'es') return basename(packageJson.exports['.'].import);
+        throw new Error();
+      }
+    },
     rollupOptions: {
-      input: resolve(__dirname, 'src/index.ts'),
-      output: [
-        {
-          file: packageJson.exports['.'].import,
-          format: "es",
-          sourcemap: true,
-        },
-        {
-          file: packageJson.exports['.'].require,
-          format: "cjs",
-          sourcemap: true,
-        },
-      ],
       external: ['react'],
       output: {
         globals: {
