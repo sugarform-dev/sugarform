@@ -1,18 +1,24 @@
 import { resolve, basename } from 'path';
-import terser from "@rollup/plugin-terser";
+import { minify, defineRollupSwcMinifyOption } from 'rollup-plugin-swc3';
 import reactPlugin from '@vitejs/plugin-react-swc';
 import outputSize from 'rollup-plugin-output-size';
 import packageJson from "./package.json" assert { type: "json" };
 import { defineConfig } from 'vite';
+import Inspect from 'vite-plugin-inspect';
 
 export default defineConfig({
   plugins: [
     reactPlugin(),
-    terser({
-      compress: {},
-      mangle: {},
-    }),
+    minify(
+      defineRollupSwcMinifyOption({
+        module: true,
+      }),
+    ),
     outputSize(),
+    Inspect({
+      build: true,
+      outputDir: resolve(__dirname, '.vite-inspect'),
+    }),
   ],
   build: {
     emptyOutDir: true,
