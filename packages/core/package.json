@@ -1,0 +1,44 @@
+{
+  "name": "@sugarform/core",
+  "version": "0.1.0",
+  "description": "Sugarform is Uncontrolled, Growth-ready, And Reusable form framework of react.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sugarform-dev/sugarform.git"
+  },
+  "author": "aspulse <aspulse.x@gmail.com>",
+  "keywords": [
+    "react",
+    "front-end"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit --composite false",
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "@types/react": "^18.0.0",
+    "react": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
