@@ -21,7 +21,7 @@ jobs:
         uses: ./.github/actions/setup-node
       - name: Run Prettier
         run: pnpm run format:check
-      
+
   eslint:
     runs-on: ubuntu-latest
     steps:
@@ -37,4 +37,19 @@ jobs:
           turbo-cache-key: lint
       - name: Run ESLint
         run: pnpm run lint
-      
+
+  tsc:
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ github.event_name != 'pull_request_target' }}
+        uses: actions/checkout@v3
+      - if: ${{ github.event_name == 'pull_request_target' }}
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Setup turbo
+        uses: ./.github/actions/setup-turbo
+        with:
+          turbo-cache-key: typecheck
+      - name: Run tsc
+        run: pnpm run typecheck
