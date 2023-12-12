@@ -15,7 +15,7 @@ runs:
     - name: Launch Turbo Remote Cache Server
       uses: dtinth/setup-github-actions-caching-for-turbo@v1.1.0
       with:
-        cache-prefix: turbogha_${{ runner.os }}_${{ inputs.turbo-cache-key }}_node${{ inputs.node-version }}
+        cache-prefix: turbogha_${{ runner.os }}_${{ inputs.turbo-cache-key }}_node${{ inputs.node-version }}_s
     - name: Setup node
       uses: ./.github/actions/setup-node
       with:
