@@ -27,7 +27,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "vite build",
+    "build": "tsx build.ts",
     "typecheck": "tsc --noEmit --composite false",
     "lint": "eslint ."
   },

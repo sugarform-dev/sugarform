@@ -1,3 +1,6 @@
+import { a } from "./src/util";
+export { a };
+
 export function hello() {
-    return "Hello, World!" == "Hello, World!";
+  return 'a' == a();
 }
