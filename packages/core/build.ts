@@ -6,6 +6,7 @@ import { build } from 'esbuild';
 import { execa } from 'execa';
 import { nodeExternalsPlugin } from 'esbuild-node-externals';
 import packageJson from './package.json' assert { type: 'json' };
+import { transfer } from 'multi-stage-sourcemap';
 
 
 const entry = './lib.ts';
@@ -25,6 +26,8 @@ const bundled = bundle();
 await Promise.all([bundled, pipeline('esm'), pipeline('cjs'), types()]);
 consola.log('');
 consola.success('All tasks completed.');
+consola.log('');
+
 
 async function bundle() {
   consola.start(`Bundling...`);
@@ -54,7 +57,7 @@ async function bundle() {
     consola.error('Build result of esbuild did not contain source!');
     process.exit(1);
   }
-  consola.success(`Bundling by esbuild finished! (${toKiloBytes(getStringBytes(source))})`);
+  consola.success(`Bundled by esbuild! (${toKiloBytes(getStringBytes(source))})`);
   return { sourcemap, source };
 }
 
@@ -68,7 +71,7 @@ async function types() {
 async function pipeline(format: 'esm' | 'cjs') {
   const code = await bundled;
   
-  consola.start(`Building ${format}...`);
+  consola.start(`[${format}] Building...`);
   const output = join(format === 'esm' ? packageJson.exports['.'].import : packageJson.exports['.'].require);
 
   const transformed = await transform(code.source, {
@@ -90,7 +93,7 @@ async function pipeline(format: 'esm' | 'cjs') {
 
   const transform_map = transformed.map;
   if (transform_map === undefined) {
-    consola.error('Transform result of SWC did not contain source!');
+    consola.error(`[${format}] Transform result of SWC did not contain source!`);
     process.exit(1);
   }
 
@@ -104,7 +107,7 @@ async function pipeline(format: 'esm' | 'cjs') {
 
   const minify_map = minified.map;
   if (minify_map === undefined) {
-    consola.error('Minify result of SWC did not contain source!');
+    consola.error(`[${format}] Minify result of SWC did not contain source!`);
     process.exit(1);
   }
 
@@ -116,12 +119,20 @@ async function pipeline(format: 'esm' | 'cjs') {
   consola.info(`[${format}] SWC minified. (${toKiloBytes(size.unminified)} -> ${toKiloBytes(size.minified)}, -${Math.round((1 - size.minified / size.unminified) * 100)}%)`);
 
   await writeFile(output, minified.code);
-  consola.success(`Done! (${output})`);
+  consola.success(`[${format}] Done! (${output})`);
+
+  consola.start(`[${format}] Merging sourcemaps...`);
+  const swc_map = transfer({ fromSourceMap: minify_map, toSourceMap: transform_map });
+  const sourcemap = transfer({ fromSourceMap: swc_map, toSourceMap: (await bundled).sourcemap });
+  const sourcemap_output = `${output}.map`;
+  await writeFile(sourcemap_output, sourcemap);
+  consola.success(`[${format}] Done! (${sourcemap_output})`);
+
 }
 
 function getStringBytes(str: string) {
   return Buffer.byteLength(str, 'utf-8');
 }
 function toKiloBytes(bytes: number) {
-  return `${Math.round(bytes * 100) / 100}kB`;
+  return `${Math.round(bytes / 10) / 100}kB`;
 }
