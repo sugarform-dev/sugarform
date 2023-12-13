@@ -1,6 +1,5 @@
-import { a } from "./src/util";
-export { a };
+import { aabbccddeeffgg } from "./src/util";
 
 export function hello() {
-  return 'a' == a();
+  return 'a' == aabbccddeeffgg();
 }

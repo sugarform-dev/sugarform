@@ -1,9 +1,10 @@
 import { consola } from 'consola';
 import { basename, dirname, join } from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { transformFile, minify } from '@swc/core';
+import { transform, minify } from '@swc/core';
+import { build } from 'esbuild';  
 import { execa } from 'execa';
-import tsc from 'tsc-prog';
+import { nodeExternalsPlugin } from 'esbuild-node-externals';
 import packageJson from './package.json' assert { type: 'json' };
 
 
@@ -20,27 +21,62 @@ await mkdir('./dist', { recursive: true });
 consola.success('Created dist folder.');
 
 consola.log('');
-await Promise.all([pipeline('es'), pipeline('cjs'), types()]);
+const bundled = bundle();
+await Promise.all([bundled, pipeline('esm'), pipeline('cjs'), types()]);
 consola.log('');
+consola.success('All tasks completed.');
 
+async function bundle() {
+  consola.start(`Bundling...`);
+  const { outputFiles } = await build({
+    entryPoints: [entry],
+    sourcemap: 'external',
+    target: 'esnext',
+    bundle: true,
+    write: false,
+    platform: 'neutral',
+    outfile: './index.ts',
+    jsx: 'preserve',
+    plugins: [
+      nodeExternalsPlugin({
+        devDependencies: false,
+      })
+    ]
+  });
+  const sourcemap = outputFiles.find(v => v.path.endsWith('index.ts.map'))?.text;
+  const source = outputFiles.find(v => v.path.endsWith('index.ts'))?.text;
+
+  if (sourcemap === undefined) {
+    consola.error('Build result of esbuild did not contain sourcemap!');
+    process.exit(1);
+  }
+  if (source === undefined) {
+    consola.error('Build result of esbuild did not contain source!');
+    process.exit(1);
+  }
+  consola.success(`Bundling by esbuild finished! (${toKiloBytes(getStringBytes(source))})`);
+  return { sourcemap, source };
+}
 
 async function types() {
   const output = join(packageJson.exports['.'].types);
   consola.start('Building types...');
-  await execa('dts-bundle-generator', ['-o', output, entry]).pipeStdout(process.stdout).pipeStderr(process.stderr);
+  await execa('dts-bundle-generator', ['-o', output, entry]).pipeStdout?.(process.stdout).pipeStderr?.(process.stderr);
   consola.success(`Done! (${output})`);
 }
 
-async function pipeline(format: 'es' | 'cjs') {
+async function pipeline(format: 'esm' | 'cjs') {
+  const code = await bundled;
+  
   consola.start(`Building ${format}...`);
-  const output = join(format === 'es' ? packageJson.exports['.'].import : packageJson.exports['.'].require);
+  const output = join(format === 'esm' ? packageJson.exports['.'].import : packageJson.exports['.'].require);
 
-  const transformed = await transformFile(entry, {
-    sourceMaps: false,
+  const transformed = await transform(code.source, {
+    sourceMaps: true,
     isModule: true,
     minify: true,
     module: {
-      type: format === 'es' ? 'es6' : 'commonjs',
+      type: format === 'esm' ? 'es6' : 'commonjs',
     },
     jsc: {
       parser: {
@@ -52,18 +88,32 @@ async function pipeline(format: 'es' | 'cjs') {
     },
   });
 
+  const transform_map = transformed.map;
+  if (transform_map === undefined) {
+    consola.error('Transform result of SWC did not contain source!');
+    process.exit(1);
+  }
+
+
   const minified = await minify(transformed.code, {
     compress: {},
+    sourceMap: true,
     mangle: false,
     module: true,
   });
 
+  const minify_map = minified.map;
+  if (minify_map === undefined) {
+    consola.error('Minify result of SWC did not contain source!');
+    process.exit(1);
+  }
+
   const size = {
-    uncompressed: getStringBytes(transformed.code),
-    compressed: getStringBytes(minified.code),
+    unminified: getStringBytes(transformed.code),
+    minified: getStringBytes(minified.code),
   };
 
-  consola.info(`[${format}] SWC minified. (${toKiloBytes(size.uncompressed)} -> ${toKiloBytes(size.compressed)}, -${Math.round((1 - size.compressed / size.uncompressed) * 100)}%)`);
+  consola.info(`[${format}] SWC minified. (${toKiloBytes(size.unminified)} -> ${toKiloBytes(size.minified)}, -${Math.round((1 - size.minified / size.unminified) * 100)}%)`);
 
   await writeFile(output, minified.code);
   consola.success(`Done! (${output})`);
