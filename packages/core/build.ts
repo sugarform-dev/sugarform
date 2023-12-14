@@ -7,7 +7,7 @@ import { execa } from 'execa';
 import { nodeExternalsPlugin } from 'esbuild-node-externals';
 import packageJson from './package.json' assert { type: 'json' };
 import { transfer } from 'multi-stage-sourcemap';
-import { createCompilerHost, createIncrementalCompilerHost, createProgram } from 'typescript';
+import ts from 'typescript';
 
 const entry = './lib.ts';
 
@@ -75,10 +75,10 @@ async function types() {
     declarationMap: true,
     emitDeclarationOnly: true,
   };
-  const host = createIncrementalCompilerHost(options);
+  const host = ts.createIncrementalCompilerHost(options);
   host.writeFile = (fileName: string, contents: string) => createdFiles[fileName] = contents;
 
-  const program = createProgram(['./dist/index.ts'], options, host);
+  const program = ts.createProgram(['./dist/index.ts'], options, host);
   program.emit();
 
   console.log(createdFiles);
