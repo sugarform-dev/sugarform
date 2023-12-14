@@ -7,6 +7,7 @@ import { execa } from 'execa';
 import { nodeExternalsPlugin } from 'esbuild-node-externals';
 import packageJson from './package.json' assert { type: 'json' };
 import { transfer } from 'multi-stage-sourcemap';
+import { createCompilerHost, createIncrementalCompilerHost, createProgram } from 'typescript';
 
 const entry = './lib.ts';
 
@@ -65,9 +66,22 @@ async function bundle() {
 async function types() {
   const output = join(packageJson.exports['.'].types);
   consola.start('Building types...');
-  await execa('dts-bundle-generator', ['-o', output, entry])
-    .pipeStdout?.(process.stdout)
-    .pipeStderr?.(process.stderr);
+
+  const createdFiles: Record<string, string> = {};
+  
+  await writeFile('./dist/index.ts', (await bundled).source);
+  const options = {
+    declaration: true,
+    declarationMap: true,
+    emitDeclarationOnly: true,
+  };
+  const host = createIncrementalCompilerHost(options);
+  host.writeFile = (fileName: string, contents: string) => createdFiles[fileName] = contents;
+
+  const program = createProgram(['./dist/index.ts'], options, host);
+  program.emit();
+
+  console.log(createdFiles);
   consola.success(`Done! (${output})`);
 }
 
