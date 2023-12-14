@@ -1,5 +1,5 @@
 import { consola } from 'consola';
-import { basename, dirname, join } from 'path';
+import { join } from 'path';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { transform, minify } from '@swc/core';
 import { build } from 'esbuild';
