@@ -1,15 +1,16 @@
 import { consola } from 'consola';
 import { join } from 'path';
-import { mkdir, rm, writeFile } from 'fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'fs/promises';
 import { transform, minify } from '@swc/core';
 import { build } from 'esbuild';
 import { execa } from 'execa';
 import { nodeExternalsPlugin } from 'esbuild-node-externals';
 import packageJson from './package.json' assert { type: 'json' };
 import { transfer } from 'multi-stage-sourcemap';
-import ts from 'typescript';
+import { stderr, stdout } from 'process';
 
 const entry = './lib.ts';
+const tsbuildinfo = 'node_modules/.cache/tsbuildinfo.json';
 
 consola.start('Building @sugarform/core...');
 
@@ -66,22 +67,19 @@ async function bundle() {
 async function types() {
   const output = join(packageJson.exports['.'].types);
   consola.start('Building types...');
-
-  const createdFiles: Record<string, string> = {};
   
+  const preserved_buildinfo = await readFile(tsbuildinfo).catch(() => null);
   await writeFile('./dist/index.ts', (await bundled).source);
-  const options = {
-    declaration: true,
-    declarationMap: true,
-    emitDeclarationOnly: true,
-  };
-  const host = ts.createIncrementalCompilerHost(options);
-  host.writeFile = (fileName: string, contents: string) => createdFiles[fileName] = contents;
+  await execa('tsc', ['--project', 'tsconfig.types.json']).pipeStdout?.(stdout).pipeStderr?.(stderr);
+  await rm('./dist/index.ts');
+  if (preserved_buildinfo !== null) {
+    consola.info('tsbuildinfo was changed. reverting...');
+    await writeFile(tsbuildinfo, preserved_buildinfo);
+  } else {
+    consola.info('tsbuildinfo was generated. removing...');
+    await rm(tsbuildinfo);
+  }
 
-  const program = ts.createProgram(['./dist/index.ts'], options, host);
-  program.emit();
-
-  console.log(createdFiles);
   consola.success(`Done! (${output})`);
 }
 
