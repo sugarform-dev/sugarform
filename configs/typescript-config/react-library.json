@@ -6,6 +6,6 @@
     "jsx": "react-jsx",
     "declaration": true,
     "declarationMap": true,
-    "incremental": true,
-  },
+    "incremental": true
+  }
 }

@@ -67,10 +67,12 @@ async function bundle() {
 async function types() {
   const output = join(packageJson.exports['.'].types);
   consola.start('Building types...');
-  
+
   const preserved_buildinfo = await readFile(tsbuildinfo).catch(() => null);
   await writeFile('./dist/index.ts', (await bundled).source);
-  await execa('tsc', ['--project', 'tsconfig.types.json']).pipeStdout?.(stdout).pipeStderr?.(stderr);
+  await execa('tsc', ['--project', 'tsconfig.types.json'])
+    .pipeStdout?.(stdout)
+    .pipeStderr?.(stderr);
   await rm('./dist/index.ts');
   if (preserved_buildinfo !== null) {
     consola.info('tsbuildinfo was changed. reverting...');
@@ -79,6 +81,13 @@ async function types() {
     consola.info('tsbuildinfo was generated. removing...');
     await rm(tsbuildinfo);
   }
+
+  consola.start('Merging Declarationmap...');
+  const sourcemap = transfer({
+    fromSourceMap: await readFile('./dist/index.d.ts.map', 'utf-8'),
+    toSourceMap: (await bundled).sourcemap,
+  });
+  await writeFile('./dist/index.d.ts.map', sourcemap);
 
   consola.success(`Done! (${output})`);
 }
