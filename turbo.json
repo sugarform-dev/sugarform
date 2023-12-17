@@ -11,7 +11,7 @@
     },
     "lint": {},
     "typecheck": {
-      "dependsOn": ["^topo"],
+      "dependsOn": ["^topo", "^build"],
       "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     }
   }
