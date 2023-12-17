@@ -1,4 +1,4 @@
-import { aabbccddeeffgg } from './src/util';
+import { aabbccddeeffgg } from './util';
 
 export function hello() {
   return 'a' == aabbccddeeffgg();

@@ -9,7 +9,7 @@ import packageJson from './package.json' assert { type: 'json' };
 import { transfer } from 'multi-stage-sourcemap';
 import { stderr, stdout } from 'process';
 
-const entry = './lib.ts';
+const entry = './src/lib.ts';
 const tsbuildinfo = 'node_modules/.cache/tsbuildinfo.json';
 
 consola.start('Building @sugarform/core...');
@@ -81,6 +81,15 @@ async function types() {
     consola.info('tsbuildinfo was generated. removing...');
     await rm(tsbuildinfo);
   }
+
+  // Check both index.d.ts and index.d.ts.map exists
+  await Promise.all([
+    readFile('./dist/index.d.ts', 'utf-8'),
+    readFile('./dist/index.d.ts.map', 'utf-8'),
+  ]).catch(() => {
+    consola.error('tsc did not generate declaration files! Ensure you ran `pnpm typecheck` before run build.');
+    process.exit(1);
+  });
 
   consola.start('Merging Declarationmap...');
   const sourcemap = transfer({
