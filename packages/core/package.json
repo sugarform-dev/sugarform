@@ -12,18 +12,19 @@
     "react",
     "front-end"
   ],
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/lib.cjs",
+  "module": "dist/lib.js",
+  "types": "dist/lib.d.ts",
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs",
-      "import": "./dist/index.js"
+      "types": "./dist/lib.d.ts",
+      "require": "./dist/lib.cjs",
+      "import": "./dist/lib.js"
     }
   },
   "files": [
+    "src",
     "dist"
   ],
   "scripts": {

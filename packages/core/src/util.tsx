@@ -1,4 +1,3 @@
-export function aabbccddeeffgg() {
-  console.log('a');
-  return 'a';
+export function bare() {
+  return <></>;
 }

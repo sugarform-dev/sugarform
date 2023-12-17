@@ -1,5 +1,6 @@
 import { consola } from 'consola';
-import { join } from 'path';
+import { basename, join } from 'path';
+import type { RawSourceMap } from 'source-map';
 import { mkdir, readFile, rm, writeFile } from 'fs/promises';
 import { transform, minify } from '@swc/core';
 import { build } from 'esbuild';
@@ -69,11 +70,9 @@ async function types() {
   consola.start('Building types...');
 
   const preserved_buildinfo = await readFile(tsbuildinfo).catch(() => null);
-  await writeFile('./dist/index.ts', (await bundled).source);
   await execa('tsc', ['--project', 'tsconfig.types.json'])
     .pipeStdout?.(stdout)
     .pipeStderr?.(stderr);
-  await rm('./dist/index.ts');
   if (preserved_buildinfo !== null) {
     consola.info('tsbuildinfo was changed. reverting...');
     await writeFile(tsbuildinfo, preserved_buildinfo);
@@ -81,24 +80,6 @@ async function types() {
     consola.info('tsbuildinfo was generated. removing...');
     await rm(tsbuildinfo);
   }
-
-  // Check both index.d.ts and index.d.ts.map exists
-  await Promise.all([
-    readFile('./dist/index.d.ts', 'utf-8'),
-    readFile('./dist/index.d.ts.map', 'utf-8'),
-  ]).catch(() => {
-    consola.error(
-      'tsc did not generate declaration files! Ensure you ran `pnpm typecheck` before run build.'
-    );
-    process.exit(1);
-  });
-
-  consola.start('Merging Declarationmap...');
-  const sourcemap = transfer({
-    fromSourceMap: await readFile('./dist/index.d.ts.map', 'utf-8'),
-    toSourceMap: (await bundled).sourcemap,
-  });
-  await writeFile('./dist/index.d.ts.map', sourcemap);
 
   consola.success(`Done! (${output})`);
 }
@@ -112,6 +93,7 @@ async function pipeline(format: 'esm' | 'cjs') {
       ? packageJson.exports['.'].import
       : packageJson.exports['.'].require
   );
+  const sourcemap_output = `${output}.map`;
 
   const transformed = await transform(code.source, {
     sourceMaps: true,
@@ -164,7 +146,7 @@ async function pipeline(format: 'esm' | 'cjs') {
     )}%)`
   );
 
-  await writeFile(output, minified.code);
+  await writeFile(output, minified.code + `\n//# sourceMappingURL=${basename(sourcemap_output)}`);
   consola.success(`[${format}] Done! (${output})`);
 
   consola.start(`[${format}] Merging sourcemaps...`);
@@ -176,8 +158,20 @@ async function pipeline(format: 'esm' | 'cjs') {
     fromSourceMap: swc_map,
     toSourceMap: (await bundled).sourcemap,
   });
-  const sourcemap_output = `${output}.map`;
-  await writeFile(sourcemap_output, sourcemap);
+
+  const relative_sourcemap = JSON.parse(sourcemap) as RawSourceMap;
+  relative_sourcemap.sourcesContent = undefined;
+  relative_sourcemap.sourceRoot = '';
+  relative_sourcemap.sources = relative_sourcemap.sources.map(v => {
+    if(!v.startsWith('src')) {
+      consola.error(`[${format}] Source path ${v} is including out of ./src folder!`);
+      process.exit(1);
+    }
+    return `../${v}`;
+  });
+
+
+  await writeFile(sourcemap_output, JSON.stringify(relative_sourcemap));
   consola.success(`[${format}] Done! (${sourcemap_output})`);
 }
 

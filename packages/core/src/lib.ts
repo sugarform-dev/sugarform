@@ -1,5 +1,5 @@
-import { aabbccddeeffgg } from './util';
+export { bare } from './util';
 
-export function hello() {
-  return 'a' == aabbccddeeffgg();
+export function hello(a: string): string {
+  return 'Hello, world!' + a;
 }
