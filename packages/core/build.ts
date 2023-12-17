@@ -87,7 +87,9 @@ async function types() {
     readFile('./dist/index.d.ts', 'utf-8'),
     readFile('./dist/index.d.ts.map', 'utf-8'),
   ]).catch(() => {
-    consola.error('tsc did not generate declaration files! Ensure you ran `pnpm typecheck` before run build.');
+    consola.error(
+      'tsc did not generate declaration files! Ensure you ran `pnpm typecheck` before run build.'
+    );
     process.exit(1);
   });
 
