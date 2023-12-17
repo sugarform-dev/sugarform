@@ -21,7 +21,7 @@ jobs:
         uses: ./.github/actions/setup-node
       - name: Run Prettier
         run: pnpm run format:check
-      
+
   eslint:
     runs-on: ubuntu-latest
     steps:
@@ -37,4 +37,3 @@ jobs:
           turbo-cache-key: lint
       - name: Run ESLint
         run: pnpm run lint
-      
