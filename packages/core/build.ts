@@ -146,7 +146,10 @@ async function pipeline(format: 'esm' | 'cjs') {
     )}%)`
   );
 
-  await writeFile(output, minified.code + `\n//# sourceMappingURL=${basename(sourcemap_output)}`);
+  await writeFile(
+    output,
+    minified.code + `\n//# sourceMappingURL=${basename(sourcemap_output)}`
+  );
   consola.success(`[${format}] Done! (${output})`);
 
   consola.start(`[${format}] Merging sourcemaps...`);
@@ -162,14 +165,15 @@ async function pipeline(format: 'esm' | 'cjs') {
   const relative_sourcemap = JSON.parse(sourcemap) as RawSourceMap;
   relative_sourcemap.sourcesContent = undefined;
   relative_sourcemap.sourceRoot = '';
-  relative_sourcemap.sources = relative_sourcemap.sources.map(v => {
-    if(!v.startsWith('src')) {
-      consola.error(`[${format}] Source path ${v} is including out of ./src folder!`);
+  relative_sourcemap.sources = relative_sourcemap.sources.map((v) => {
+    if (!v.startsWith('src')) {
+      consola.error(
+        `[${format}] Source path ${v} is including out of ./src folder!`
+      );
       process.exit(1);
     }
     return `../${v}`;
   });
-
 
   await writeFile(sourcemap_output, JSON.stringify(relative_sourcemap));
   consola.success(`[${format}] Done! (${sourcemap_output})`);
